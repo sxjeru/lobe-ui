@@ -1,11 +1,13 @@
 name: Release CI
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
       - alpha
       - beta
       - rc
+      - test
 
 jobs:
   release:
