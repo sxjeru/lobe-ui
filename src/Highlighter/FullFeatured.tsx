@@ -1,4 +1,5 @@
 import { Select, type SelectProps } from 'antd';
+import { createStyles } from 'antd-style';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { memo, useState } from 'react';
 import { Flexbox } from 'react-layout-kit';
@@ -7,9 +8,45 @@ import ActionIcon from '@/ActionIcon';
 import CopyButton from '@/CopyButton';
 import SyntaxHighlighter from '@/Highlighter/SyntaxHighlighter';
 import { languageMap } from '@/hooks/useHighlight';
-
-import { useStyles } from './style';
 import { HighlighterProps } from './type';
+
+// 将样式定义直接放在组件文件中
+const useStyles = createStyles(({ css, token }) => {
+  return {
+    container: css`
+      position: relative;
+      overflow: hidden;
+      margin-block: 1em;
+      border-radius: calc(var(--lobe-markdown-border-radius) * 1px);
+      box-shadow: 0 0 0 1px var(--lobe-markdown-border-color) inset;
+      max-height: 80vh; /* 限制最大高度，确保有滚动效果 */
+      display: flex;
+      flex-direction: column;
+    `,
+    
+    stickyHeader: css`
+      position: sticky;
+      top: 0;
+      padding: 8px 12px;
+      background: ${token.colorBgContainer};
+      border-bottom: 1px solid ${token.colorBorderSecondary};
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.3s ease;
+    `,
+    
+    codeContent: css`
+      overflow: auto;
+      max-height: calc(80vh - 40px); /* 最大高度减去头部高度 */
+    `,
+    
+    select: css`
+      font-size: 12px;
+      color: ${token.colorTextSecondary};
+      margin: 0;
+    `,
+  };
+});
 
 const options: SelectProps['options'] = languageMap.map((item) => ({
   label: item,
@@ -40,7 +77,7 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps>(
   }) => {
     const [expand, setExpand] = useState(defalutExpand);
     const [lang, setLang] = useState(language);
-    const { styles, cx } = useStyles(type);
+    const { styles, cx } = useStyles();
 
     const size = { blockSize: 24, fontSize: 14, strokeWidth: 2 };
 
@@ -74,7 +111,12 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps>(
         style={style}
         {...rest}
       >
-        <Flexbox align={'center'} className={styles.header} horizontal justify={'space-between'}>
+        <Flexbox 
+          align={'center'} 
+          className={styles.stickyHeader} 
+          horizontal 
+          justify={'space-between'}
+        >
           <ActionIcon
             icon={expand ? ChevronDown : ChevronRight}
             onClick={() => setExpand(!expand)}
@@ -108,7 +150,12 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps>(
             {actions}
           </Flexbox>
         </Flexbox>
-        <div style={expand ? {} : { height: 0, overflow: 'hidden' }}>{body}</div>
+        <div 
+          className={styles.codeContent}
+          style={expand ? {} : { height: 0, overflow: 'hidden' }}
+        >
+          {body}
+        </div>
       </div>
     );
   },
