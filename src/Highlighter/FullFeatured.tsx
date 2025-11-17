@@ -2,7 +2,16 @@
 
 import { cva } from 'class-variance-authority';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ReactNode,
+  RefObject,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Flexbox } from 'react-layout-kit';
 
 import ActionIcon from '@/ActionIcon';
@@ -14,6 +23,54 @@ import Text from '@/Text';
 import LangSelect from './LangSelect';
 import { useStyles } from './style';
 import { HighlighterProps } from './type';
+
+const useFloatingActions = (containerRef: RefObject<HTMLDivElement | null>) => {
+  const [isSticky, setIsSticky] = useState(false);
+  const [stickyTop, setStickyTop] = useState(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const containerTop = rect.top;
+      const containerBottom = rect.bottom;
+      const containerHeight = rect.height;
+
+      // 按钮高度（包含 padding），约 40px
+      const buttonHeight = 40;
+
+      // 如果代码框顶部在视口上方，且底部在视口内
+      if (containerTop < 0 && containerBottom > buttonHeight) {
+        setIsSticky(true);
+        // 计算悬浮按钮的位置
+        // offset 是按钮相对于容器顶部的距离
+        const scrolledDistance = Math.abs(containerTop);
+        // 确保按钮不会超出容器底部
+        const maxOffset = containerHeight - buttonHeight;
+        const offset = Math.min(scrolledDistance, maxOffset);
+        setStickyTop(offset);
+      } else {
+        setIsSticky(false);
+        setStickyTop(0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // 也监听 resize 事件，以应对窗口大小变化
+    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScroll(); // 初始检查
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [containerRef]);
+
+  return { isSticky, stickyTop };
+};
 
 interface HeaderLanguageProps {
   allowChangeLanguage: boolean;
@@ -37,7 +94,7 @@ const HeaderLanguage = memo<HeaderLanguageProps>(
     setLanguage,
     showLanguage,
   }) => {
-    if (!showLanguage) return null;
+    if (!showLanguage) return;
 
     return (
       <Flexbox
@@ -109,6 +166,8 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps & { chi
     const [expand, setExpand] = useState(defaultExpand);
     const { styles, cx } = useStyles();
     const contentRef = useRef(content);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { isSticky, stickyTop } = useFloatingActions(containerRef);
 
     useEffect(() => {
       contentRef.current = content;
@@ -132,12 +191,12 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps & { chi
               borderless: styles.borderless,
             },
             shadow: {
-              false: null,
+              false: undefined,
               true: styles.shadow,
             },
             wrap: {
               false: styles.nowrap,
-              true: null,
+              true: undefined,
             },
           },
           /* eslint-enable sort-keys-fix/sort-keys-fix */
@@ -181,7 +240,7 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps & { chi
     );
 
     const originalActions = useMemo(() => {
-      if (!copyable) return null;
+      if (!copyable) return;
       return <CopyButton content={getContent} size={'small'} />;
     }, [copyable, getContent]);
 
@@ -214,6 +273,7 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps & { chi
       <Flexbox
         className={cx(variants({ shadow, variant, wrap }), className)}
         data-code-type="highlighter"
+        ref={containerRef}
         style={style}
         {...rest}
       >
@@ -238,7 +298,14 @@ export const HighlighterFullFeatured = memo<HighlighterFullFeaturedProps & { chi
             setLanguage={setLanguage}
             showLanguage={showLanguage}
           />
-          <Flexbox align={'center'} flex={'none'} gap={4} horizontal>
+          <Flexbox
+            align={'center'}
+            className={cx(styles.actionsWrapper, isSticky && styles.actionsSticky)}
+            flex={'none'}
+            gap={4}
+            horizontal
+            style={isSticky ? { top: stickyTop } : undefined}
+          >
             {actions}
           </Flexbox>
         </Flexbox>

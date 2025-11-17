@@ -18,6 +18,23 @@ export const useStyles = createStyles(({ token, css, cx, prefixCls, stylish }) =
         opacity: 0;
       `,
     ),
+    actionsSticky: css`
+      position: absolute;
+      z-index: 10;
+      inset-inline-end: 8px;
+
+      border-radius: ${token.borderRadiusSM}px;
+
+      opacity: 1 !important;
+      background: ${token.colorBgContainer};
+      box-shadow: ${token.boxShadowSecondary};
+
+      transition: inset-block-start 0.1s ease-out;
+    `,
+    actionsWrapper: css`
+      position: relative;
+      transition: opacity 0.2s ${token.motionEaseInOut};
+    `,
     bodyCollapsed: css`
       height: 0;
       opacity: 0;
